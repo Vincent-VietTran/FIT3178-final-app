@@ -1,0 +1,33 @@
+//
+//  .gitignore
+//  "FIT3178-final-app
+//
+//  Created by Viet Tran
+//
+
+# Xcode
+.DS_Store
+xcuserdata/
+build/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.ipa
+*.app
+*.dSYM
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Logs and temporary files
+*.log
+*.swp
+
+# Other
+.idea/
+*.bak
+
+
