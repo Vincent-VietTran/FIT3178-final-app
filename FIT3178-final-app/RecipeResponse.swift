@@ -18,4 +18,9 @@ class RecipeResponse: NSObject, Decodable {
     
     
     // RecipeResponse dont have initializer, instead relying on Swift’s synthesized decoding.
+    
+    // Get meals data from response only
+    private enum CodingKeys: String, CodingKey {
+            case recipes = "meals"
+        }
 }
