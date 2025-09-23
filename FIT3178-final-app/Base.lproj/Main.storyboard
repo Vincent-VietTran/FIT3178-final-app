@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23094" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23094" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="eo6-wm-b31">
     <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23084"/>
@@ -7,10 +7,61 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Recipe Searching-->
+        <!--My Recipes-->
+        <scene sceneID="NWb-jM-IIu">
+            <objects>
+                <tableViewController id="QBv-cb-USe" customClass="MyRecipesTableViewController" customModule="FIT3178_final_app" customModuleProvider="target" sceneMemberID="viewController">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" id="tM7-GS-hqP">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <prototypes>
+                            <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="recipeCell" textLabel="rB0-08-sNs" detailTextLabel="h1a-nT-NLK" style="IBUITableViewCellStyleSubtitle" id="jnE-fs-LAf">
+                                <rect key="frame" x="0.0" y="50" width="393" height="43.666667938232422"/>
+                                <autoresizingMask key="autoresizingMask"/>
+                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="jnE-fs-LAf" id="IUM-cM-nNm">
+                                    <rect key="frame" x="0.0" y="0.0" width="393" height="43.666667938232422"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <subviews>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="rB0-08-sNs">
+                                            <rect key="frame" x="20" y="6.0000000000000009" width="25" height="14.333333333333334"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="0.0"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                        <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Subtitle" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="h1a-nT-NLK">
+                                            <rect key="frame" x="19.999999999999996" y="22.333333333333336" width="43.666666666666664" height="14.333333333333334"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="0.0"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                    </subviews>
+                                </tableViewCellContentView>
+                            </tableViewCell>
+                        </prototypes>
+                        <connections>
+                            <outlet property="dataSource" destination="QBv-cb-USe" id="VjM-y9-rEk"/>
+                            <outlet property="delegate" destination="QBv-cb-USe" id="2sN-m3-uk8"/>
+                        </connections>
+                    </tableView>
+                    <navigationItem key="navigationItem" title="My Recipes" id="9dF-g5-EW4">
+                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="jmG-8j-ZHW">
+                            <connections>
+                                <segue destination="aCQ-59-sMV" kind="show" identifier="searchRecipesSegue" id="EIx-aM-uz4"/>
+                            </connections>
+                        </barButtonItem>
+                    </navigationItem>
+                </tableViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="nbq-TD-YbR" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="970.2290076335878" y="-739.43661971830988"/>
+        </scene>
+        <!--Search Recipes-->
         <scene sceneID="h0e-2J-nZz">
             <objects>
-                <tableViewController id="aCQ-59-sMV" customClass="RecipeSearchingTableViewController" customModule="FIT3178_final_app" customModuleProvider="target" sceneMemberID="viewController">
+                <tableViewController id="aCQ-59-sMV" customClass="SearchRecipesTableViewController" customModule="FIT3178_final_app" customModuleProvider="target" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" id="EdF-F0-ye4">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -46,29 +97,29 @@
                             <outlet property="delegate" destination="aCQ-59-sMV" id="EZj-ae-2VA"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Recipe Searching" id="FbJ-DE-Eaq"/>
+                    <navigationItem key="navigationItem" title="Search Recipes" id="FbJ-DE-Eaq"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="yZz-Sy-OLj" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="479" y="11"/>
         </scene>
         <!--Navigation Controller-->
-        <scene sceneID="p3s-ne-GnZ">
+        <scene sceneID="VbV-pc-Zcw">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="2dc-89-5RM" sceneMemberID="viewController">
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="eo6-wm-b31" sceneMemberID="viewController">
                     <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="l9t-Te-v7J">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="6Tr-A8-RK8">
                         <rect key="frame" x="0.0" y="59" width="393" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <connections>
-                        <segue destination="aCQ-59-sMV" kind="relationship" relationship="rootViewController" id="Sko-XR-TsK"/>
+                        <segue destination="QBv-cb-USe" kind="relationship" relationship="rootViewController" id="N5R-4u-aji"/>
                     </connections>
                 </navigationController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="SRY-6Z-htr" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="i90-Yc-zHl" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-431" y="11"/>
+            <point key="canvasLocation" x="43.511450381679388" y="-739.43661971830988"/>
         </scene>
     </scenes>
     <resources>
