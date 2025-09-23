@@ -1,13 +1,13 @@
 //
-//  HomeTableViewController.swift
+//  RecipeSearchingTableViewController.swift
 //  FIT3178-final-app
 //
-//  Created by Viet Tran on 18/9/2025.
+//  Created by Viet Tran on 23/9/2025.
 //
 
 import UIKit
 
-class HomeTableViewController: UITableViewController {
+class RecipeSearchingTableViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
