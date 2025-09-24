@@ -24,7 +24,6 @@ class FirebaseController: NSObject, DatabaseProtocol {
     var listeners = MulticastDelegate<DatabaseListener>()
     var recipeList: [Recipe]
     
-    private let collectionName = "recipes"
     
 //    Firebase has the concept of listening to specific collections or documents for changes, much like the NSFetchedResultsController. These collection references allow us to listen to all updates to specific collections of data
     var authController: Auth
@@ -44,14 +43,17 @@ class FirebaseController: NSObject, DatabaseProtocol {
         super.init()
         
         Task {
-        do {
-            let authDataResult = try await authController.signInAnonymously()
-            currentUser = authDataResult.user
-        }
-        catch {
-            fatalError("Firebase Authentication Failed with Error \(String(describing: error))")
-        }
+            do {
+                let authDataResult = try await authController.signInAnonymously()
+                currentUser = authDataResult.user
+            }
+            catch {
+                fatalError("Firebase Authentication Failed with Error \(String(describing: error))")
+            }
+            // setup listener for this (anonymous) user
             self.setupRecipeListener()
+            // mark as initialized because we've set up a snapshot listener already
+            listenersInitialized = true
         }
     }
     
@@ -74,79 +76,90 @@ class FirebaseController: NSObject, DatabaseProtocol {
     }
     
     // MARK: - Recipe CRUD
-    // Add a recipe only if no other document has the same recipeId field.
-       func addRecipe(recipeData: RecipeData, completion: @escaping (Result<Recipe, Error>) -> Void) {
-           let mealId = recipeData.recipeId
+    // Add a recipe only if no other document in the CURRENT USER'S subcollection has the same recipeId field.
+    // The recipe will be stored under: users/{uid}/recipes/{autoDocId}
+    func addRecipe(recipeData: RecipeData, completion: @escaping (Result<Recipe, Error>) -> Void) {
+        // Ensure we have an authenticated user
+        guard let user = currentUser else {
+            let err = NSError(domain: "FirebaseController", code: 401, userInfo: [NSLocalizedDescriptionKey: "No authenticated user"])
+            completion(.failure(err))
+            return
+        }
+        
+        let mealId = recipeData.recipeId
+        
+        // Reference to the user's recipes subcollection
+        let userRecipesRef = database.collection("users").document(user.uid).collection("recipes")
+        
+        // 1) Query user's subcollection to check for existing recipe with same MealDB id
+        userRecipesRef
+            .whereField("recipeId", isEqualTo: mealId)
+            .limit(to: 1)
+            .getDocuments { [weak self] snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
 
-           // 1) Query to check for existing recipe with same MealDB id
-           database.collection(collectionName)
-               .whereField("recipeId", isEqualTo: mealId)
-               .limit(to: 1)
-               .getDocuments { [weak self] snapshot, error in
-                   if let error = error {
-                       completion(.failure(error))
-                       return
-                   }
+                if let count = snapshot?.documents.count, count > 0 {
+                    // Duplicate — return specific error code so callers can show appropriate message
+                    let err = NSError(domain: "FirebaseController", code: 409, userInfo: [NSLocalizedDescriptionKey: "A recipe with that id already exists in your collection"])
+                    completion(.failure(err))
+                    return
+                }
 
-                   if let count = snapshot?.documents.count, count > 0 {
-                       // Duplicate — return specific error code so callers can show appropriate message
-                       let err = NSError(domain: "FirebaseController", code: 409, userInfo: [NSLocalizedDescriptionKey: "A recipe with that id already exists"])
-                       completion(.failure(err))
-                       return
-                   }
+                // 2) No duplicate found — create the document in user's recipes subcollection
+                guard let self = self else {
+                    let err = NSError(domain: "FirebaseController", code: 500, userInfo: [NSLocalizedDescriptionKey: "Internal error"])
+                    completion(.failure(err))
+                    return
+                }
 
-                   // 2) No duplicate found — create the document
-                   guard let self = self else {
-                       let err = NSError(domain: "FirebaseController", code: 500, userInfo: [NSLocalizedDescriptionKey: "Internal error"])
-                       completion(.failure(err))
-                       return
-                   }
+                // Build dictionary to write (only non-nil fields)
+                var data: [String: Any] = [
+                    "recipeId": recipeData.recipeId,
+                    "recipeName": recipeData.recipeName,
+                    "createdAt": Timestamp(date: Date())
+                ]
+                if let category = recipeData.category { data["category"] = category }
+                if let country = recipeData.country { data["country"] = country }
+                if let instructions = recipeData.instructions { data["instructions"] = instructions }
+                if let thumbnail = recipeData.thumbnail { data["thumbnail"] = thumbnail }
+                if let tags = recipeData.tags { data["tags"] = tags }
+                if let tutorial = recipeData.tutorialLink { data["tutorialLink"] = tutorial }
+                if let source = recipeData.sourceLink { data["sourceLink"] = source }
+                // map ingredients to array of dicts
+                data["ingredients"] = recipeData.ingredients.map { ["name": $0.name, "measure": $0.measure ?? ""] }
 
-                   // Build dictionary to write (only non-nil fields)
-                   var data: [String: Any] = [
-                       "recipeId": recipeData.recipeId,
-                       "recipeName": recipeData.recipeName
-                   ]
-                   if let category = recipeData.category { data["category"] = category }
-                   if let country = recipeData.country { data["country"] = country }
-                   if let instructions = recipeData.instructions { data["instructions"] = instructions }
-                   if let thumbnail = recipeData.thumbnail { data["thumbnail"] = thumbnail }
-                   if let tags = recipeData.tags { data["tags"] = tags }
-                   if let tutorial = recipeData.tutorialLink { data["tutorialLink"] = tutorial }
-                   if let source = recipeData.sourceLink { data["sourceLink"] = source }
-                   // map ingredients to array of dicts
-                   data["ingredients"] = recipeData.ingredients.map { ["name": $0.name, "measure": $0.measure ?? ""] }
-
-                   // Use an auto-generated document id (you could also choose mealId as doc id)
-                   let docRef = database.collection(self.collectionName).document()
-                   docRef.setData(data) { err in
-                       if let err = err {
-                           completion(.failure(err))
-                       } else {
-                           // build Recipe object to return (matches your Recipe model)
-                           let added = Recipe()
-                           added.recipeId = recipeData.recipeId
-                           added.recipeName = recipeData.recipeName
-                           added.category = recipeData.category
-                           added.country = recipeData.country
-                           added.instructions = recipeData.instructions
-                           added.thumbnail = recipeData.thumbnail
-                           added.tags = recipeData.tags
-                           added.tutorialLink = recipeData.tutorialLink
-                           added.sourceLink = recipeData.sourceLink
-                           added.ingredients = recipeData.ingredients
-                           added.id = docRef.documentID
-                           completion(.success(added))
-                       }
-                   }
-               }
-       }
+                // Use an auto-generated document id in the user's subcollection
+                let docRef = userRecipesRef.document()
+                docRef.setData(data) { err in
+                    if let err = err {
+                        completion(.failure(err))
+                    } else {
+                        // build Recipe object to return (matches your Recipe model)
+                        let added = Recipe()
+                        added.recipeId = recipeData.recipeId
+                        added.recipeName = recipeData.recipeName
+                        added.category = recipeData.category
+                        added.country = recipeData.country
+                        added.instructions = recipeData.instructions
+                        added.thumbnail = recipeData.thumbnail
+                        added.tags = recipeData.tags
+                        added.tutorialLink = recipeData.tutorialLink
+                        added.sourceLink = recipeData.sourceLink
+                        added.ingredients = recipeData.ingredients
+                        added.id = docRef.documentID
+                        completion(.success(added))
+                    }
+                }
+            }
+    }
     
     func deleteRecipe(recipe: Recipe) {
-        // Delete recipe by its id if found
-        if let recipeId = recipe.id {
-            recipesRef?.document(recipeId).delete()
-        }
+        // Delete recipe by its id from the user's recipes subcollection if found
+        guard let recipeId = recipe.id, let user = currentUser else { return }
+        database.collection("users").document(user.uid).collection("recipes").document(recipeId).delete()
     }
     
     // MARK: - Firebase Auth actions (async/await)
@@ -162,10 +175,16 @@ class FirebaseController: NSObject, DatabaseProtocol {
                 "createdAt": Timestamp(date: Date())
             ])
             
-        
+            // When a real user signs up we should switch the recipes listener to listen to their subcollection.
+            // Remove previous listener by reassigning recipesRef and adding the new snapshot listener.
+            // Note: we don't maintain an explicit listener handle here — reassigning recipesRef will mean
+            // the previous listener remains if one was added; to keep this simple we only set up a new listener if not already initialized.
             if !listenersInitialized {
                 self.setupRecipeListener()
                 listenersInitialized = true
+            } else {
+                // If listeners were previously initialized (for anonymous user), switch to the new user's subcollection
+                self.setupRecipeListener()
             }
             return result.user
     }
@@ -175,10 +194,13 @@ class FirebaseController: NSObject, DatabaseProtocol {
         self.currentUser = result.user
         print("Current user: \( self.currentUser?.uid ?? "nil")")
 
-        // only initialize Firestore listeners if not initialized
+        // Ensure we listen to the authenticated user's recipes subcollection
         if !listenersInitialized {
             self.setupRecipeListener()
             listenersInitialized = true
+        } else {
+            // Switch listener to the signed-in user's subcollection
+            self.setupRecipeListener()
         }
         return result.user
     }
@@ -200,10 +222,18 @@ class FirebaseController: NSObject, DatabaseProtocol {
         return nil
     }
     func setupRecipeListener(){
-        // Get firestore recipes storage reference
-        recipesRef = database.collection("recipes")
+        // If we have a user, listen to that user's recipes subcollection, otherwise fallback to top-level "recipes"
+        if let user = currentUser {
+            recipesRef = database.collection("users").document(user.uid).collection("recipes")
+        } else {
+            // fallback (shouldn't normally happen because we sign in anonymously in init)
+            recipesRef = database.collection("recipes")
+        }
         
-        // Add snapshot listener, provide clsoure to be called whenever change occur
+        // Remove any existing local snapshot handling state
+        recipeList.removeAll()
+        
+        // Add snapshot listener, provide closure to be called whenever change occur
         recipesRef?.addSnapshotListener(){
             // Return immediately if snapshot not valid
             (QuerySnapshot, error) in guard let querySnapshot = QuerySnapshot else{
@@ -217,7 +247,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
     }
     
     func parseRecipesSnapshot(snapshot: QuerySnapshot){
-        // oarase snapshot and make changes as required to local properties and call local listeners
+        // parse snapshot and make changes as required to local properties and call local listeners
         snapshot.documentChanges.forEach { (change) in
             var recipe: Recipe
             do {
@@ -230,11 +260,17 @@ class FirebaseController: NSObject, DatabaseProtocol {
                 
                 //
                 else if change.type == .modified {
-                    recipeList.remove(at: Int(change.oldIndex))
+                    // replace at oldIndex
+                    if recipeList.indices.contains(Int(change.oldIndex)) {
+                        recipeList.remove(at: Int(change.oldIndex))
+                    }
+                    recipeList.insert(recipe, at: Int(change.newIndex))
                 }
                 
                 else if change.type == .removed {
-                    recipeList.remove(at: Int(change.oldIndex))
+                    if recipeList.indices.contains(Int(change.oldIndex)) {
+                        recipeList.remove(at: Int(change.oldIndex))
+                    }
                 }
             } catch {
                 print("Failed to decode recipe document id=\(change.document.documentID): \(error)")
@@ -243,7 +279,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
                 return
             }
             
-            // once recipes been modified as requiredm call multicast invoke and update all listeners
+            // once recipes been modified as required, call multicast invoke and update all listeners
             listeners.invoke { (listener) in
                 if listener.listenerType == .recipes || listener.listenerType == .all {
                     listener.onRecipeListChange(change: .update, recipeList: recipeList)
