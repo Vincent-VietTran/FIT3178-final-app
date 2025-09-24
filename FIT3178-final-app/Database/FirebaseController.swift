@@ -21,7 +21,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
 //    much like the NSFetchedResultsController
     
     // properties
-    let DEFAULT_COOKBOOK_NAME = "Default Cookbook"
+    let DEFAULT_RECIPE_LIST_NAME = "My"
     var listeners = MulticastDelegate<DatabaseListener>()
     var recipeList: [Recipe]
     
@@ -74,6 +74,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
         
     }
     
+    // MARK: - Recipe CRUD
     // Add a recipe only if no other document has the same recipeId field.
        func addRecipe(recipeData: RecipeData, completion: @escaping (Result<Recipe, Error>) -> Void) {
            let mealId = recipeData.recipeId
@@ -141,7 +142,6 @@ class FirebaseController: NSObject, DatabaseProtocol {
                    }
                }
        }
-                                                                                                                                                                                                                                                                                                                                                      
     
     func deleteRecipe(recipe: Recipe) {
         // Delete recipe by its id if found
@@ -150,17 +150,53 @@ class FirebaseController: NSObject, DatabaseProtocol {
         }
     }
     
-//    func signUp(email: String, password: String) async throws -> FirebaseAuth.User {
-//        <#code#>
-//    }
-//    
-//    func signIn(email: String, password: String) async throws -> FirebaseAuth.User {
-//        <#code#>
-//    }
-//    
-//    func signOut() throws {
-//        <#code#>
-//    }
+    // MARK: - Firebase Auth actions (async/await)
+    // Create account, log user in after successful
+    func signUp(email: String, password: String) async throws -> FirebaseAuth.User {
+            let result = try await authController.createUser(withEmail: email, password: password)
+            self.currentUser = result.user
+
+            // create user doc
+            let userDoc = database.collection("users").document(result.user.uid)
+            try await userDoc.setData([
+                "email": result.user.email ?? "User",
+                "createdAt": Timestamp(date: Date())
+            ])
+            
+            // create initial recipe list for user
+            let recipestData: [String: Any] = [
+                "name": "\(result.user.email ?? "\(DEFAULT_RECIPE_LIST_NAME)")'s Favorite Recipes",
+                "recipes": [],
+                "createdAt": FieldValue.serverTimestamp()
+            ]
+
+            let recipesRef = try await userDoc.collection("recipes").addDocument(data: recipestData)
+            print("Created recipe list with ID: \(recipesRef.documentID)")
+        
+            if !listenersInitialized {
+                self.setupRecipeListener()
+                listenersInitialized = true
+            }
+            return result.user
+    }
+
+    func signIn(email: String, password: String) async throws -> FirebaseAuth.User {
+        let result = try await authController.signIn(withEmail: email, password: password)
+        self.currentUser = result.user
+        print("Current user: \( self.currentUser?.uid ?? "nil")")
+
+        // only initialize Firestore listeners if not initialized
+        if !listenersInitialized {
+            self.setupRecipeListener()
+            listenersInitialized = true
+        }
+        return result.user
+    }
+
+    func signOut() throws {
+        try authController.signOut()
+        // state listener above will see no user and react
+    }
     
     // MARK: - Firebase Controller Specific Methods
     func getRecipeByID(_ id: String) -> Recipe?{

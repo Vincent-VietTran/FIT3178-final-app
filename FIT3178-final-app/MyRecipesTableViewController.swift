@@ -6,8 +6,44 @@
 //
 
 import UIKit
+import FirebaseAuth
 
 class MyRecipesTableViewController: UITableViewController, DatabaseListener {
+    
+    
+    
+    // MARK: Auth functions
+    func onAuthSuccess(user: FirebaseAuth.User) {
+        
+    }
+    
+    func onAuthError(_ error: any Error) {
+        
+    }
+    
+    @objc func signOutTapped() {
+        do {
+            try databaseController?.signOut()
+                    
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let loginVC = storyboard.instantiateViewController(withIdentifier: "LoginViewController")
+            
+            // Create the same transition as navigation back button
+            let transition = CATransition()
+            transition.duration = 0.3  // Same duration as navigation controller
+            transition.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut)
+            transition.type = CATransitionType.push
+            transition.subtype = CATransitionSubtype.fromLeft  // Slides from left (like back button)
+            
+            // Apply transition to navigation controller
+            self.navigationController?.view.layer.add(transition, forKey: nil)
+            self.navigationController?.setViewControllers([loginVC], animated: false)
+            
+        } catch {
+            // Handle error (show alert)
+            displayMessage(title: "Error", message: "Failed to sign out: \(error.localizedDescription)")
+        }
+    }
     
     // properties
     var listenerType: ListenerType = .recipes
@@ -31,6 +67,14 @@ class MyRecipesTableViewController: UITableViewController, DatabaseListener {
         // get a reference to the database from appDelegate
         let appDelegate = (UIApplication.shared.delegate as? AppDelegate)
         databaseController = appDelegate?.databaseController
+        
+        // Add Sign Out button to navigation bar
+            navigationItem.leftBarButtonItem = UIBarButtonItem(
+                title: "Sign Out",
+                style: .plain,
+                target: self,
+                action: #selector(signOutTapped)
+            )
     }
 
     // MARK: - Table view data source

@@ -25,9 +25,9 @@ protocol DatabaseListener: AnyObject {
     var listenerType: ListenerType {get set}
     func onRecipeListChange(change: DatabaseChange, recipeList: [Recipe])
     // called when an explicit sign-in completes successfully
-//    func onAuthSuccess(user: FirebaseAuth.User)
+    func onAuthSuccess(user: FirebaseAuth.User)
     // called when an auth-related error occurred (signIn/signUp)
-//    func onAuthError(_ error: Error)
+    func onAuthError(_ error: Error)
 }
 
 protocol DatabaseProtocol: AnyObject {
@@ -42,7 +42,7 @@ protocol DatabaseProtocol: AnyObject {
     
     func deleteRecipe(recipe: Recipe)
     
-//    func signUp(email: String, password: String) async throws -> FirebaseAuth.User
-//    func signIn(email: String, password: String) async throws -> FirebaseAuth.User
-//    func signOut() throws
+    func signUp(email: String, password: String) async throws -> FirebaseAuth.User
+    func signIn(email: String, password: String) async throws -> FirebaseAuth.User
+    func signOut() throws
 }
