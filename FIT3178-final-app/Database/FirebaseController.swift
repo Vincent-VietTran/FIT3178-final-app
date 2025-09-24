@@ -25,6 +25,8 @@ class FirebaseController: NSObject, DatabaseProtocol {
     var listeners = MulticastDelegate<DatabaseListener>()
     var recipeList: [Recipe]
     
+    private let collectionName = "recipes"
+    
 //    Firebase has the concept of listening to specific collections or documents for changes, much like the NSFetchedResultsController. These collection references allow us to listen to all updates to specific collections of data
     var authController: Auth
     var database: Firestore
@@ -53,6 +55,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
             self.setupRecipeListener()
         }
     }
+    
     func addListener(listener: DatabaseListener){
         // Add listner to listeners property
         listeners.addDelegate(listener)
@@ -62,41 +65,83 @@ class FirebaseController: NSObject, DatabaseProtocol {
             listener.onRecipeListChange(change: .update, recipeList: recipeList)
         }
     }
+    
     func removeListener(listener: DatabaseListener){
         listeners.removeDelegate(listener)
     }
+    
     func cleanup(){
         
     }
-    func addRecipe(recipeData: RecipeData) -> Recipe {
-        // Create a recipe instance
-        let recipe = Recipe()
-        
-        // set properties for the instance
-        recipe.recipeId = recipeData.recipeId
-        recipe.recipeName = recipeData.recipeName
-        recipe.category = recipeData.category
-        recipe.country = recipeData.country
-        recipe.instructions = recipeData.instructions
-        recipe.thumbnail = recipeData.thumbnail
-        recipe.tags = recipeData.tags
-        recipe.ingredients = recipeData.ingredients
-        recipe.tutorialLink = recipeData.tutorialLink
-        recipe.sourceLink = recipeData.sourceLink
-        
-        
-        // Add to firestore
-        do {
-            if let recipesRef = try recipesRef?.addDocument(from: recipe) {
-                recipe.id = recipesRef.documentID
-            }
-        } catch {
-            print("Failed to serialize recipe")
-        }
-        
-        // If succesfully add to firestore, return the added recipe as firestore object representation
-        return recipe
-    }
+    
+    // Add a recipe only if no other document has the same recipeId field.
+       func addRecipe(recipeData: RecipeData, completion: @escaping (Result<Recipe, Error>) -> Void) {
+           let mealId = recipeData.recipeId
+
+           // 1) Query to check for existing recipe with same MealDB id
+           database.collection(collectionName)
+               .whereField("recipeId", isEqualTo: mealId)
+               .limit(to: 1)
+               .getDocuments { [weak self] snapshot, error in
+                   if let error = error {
+                       completion(.failure(error))
+                       return
+                   }
+
+                   if let count = snapshot?.documents.count, count > 0 {
+                       // Duplicate — return specific error code so callers can show appropriate message
+                       let err = NSError(domain: "FirebaseController", code: 409, userInfo: [NSLocalizedDescriptionKey: "A recipe with that id already exists"])
+                       completion(.failure(err))
+                       return
+                   }
+
+                   // 2) No duplicate found — create the document
+                   guard let self = self else {
+                       let err = NSError(domain: "FirebaseController", code: 500, userInfo: [NSLocalizedDescriptionKey: "Internal error"])
+                       completion(.failure(err))
+                       return
+                   }
+
+                   // Build dictionary to write (only non-nil fields)
+                   var data: [String: Any] = [
+                       "recipeId": recipeData.recipeId,
+                       "recipeName": recipeData.recipeName
+                   ]
+                   if let category = recipeData.category { data["category"] = category }
+                   if let country = recipeData.country { data["country"] = country }
+                   if let instructions = recipeData.instructions { data["instructions"] = instructions }
+                   if let thumbnail = recipeData.thumbnail { data["thumbnail"] = thumbnail }
+                   if let tags = recipeData.tags { data["tags"] = tags }
+                   if let tutorial = recipeData.tutorialLink { data["tutorialLink"] = tutorial }
+                   if let source = recipeData.sourceLink { data["sourceLink"] = source }
+                   // map ingredients to array of dicts
+                   data["ingredients"] = recipeData.ingredients.map { ["name": $0.name, "measure": $0.measure ?? ""] }
+
+                   // Use an auto-generated document id (you could also choose mealId as doc id)
+                   let docRef = database.collection(self.collectionName).document()
+                   docRef.setData(data) { err in
+                       if let err = err {
+                           completion(.failure(err))
+                       } else {
+                           // build Recipe object to return (matches your Recipe model)
+                           let added = Recipe()
+                           added.recipeId = recipeData.recipeId
+                           added.recipeName = recipeData.recipeName
+                           added.category = recipeData.category
+                           added.country = recipeData.country
+                           added.instructions = recipeData.instructions
+                           added.thumbnail = recipeData.thumbnail
+                           added.tags = recipeData.tags
+                           added.tutorialLink = recipeData.tutorialLink
+                           added.sourceLink = recipeData.sourceLink
+                           added.ingredients = recipeData.ingredients
+                           added.id = docRef.documentID
+                           completion(.success(added))
+                       }
+                   }
+               }
+       }
+                                                                                                                                                                                                                                                                                                                                                      
     
     func deleteRecipe(recipe: Recipe) {
         // Delete recipe by its id if found

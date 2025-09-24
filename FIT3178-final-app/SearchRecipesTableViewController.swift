@@ -84,10 +84,31 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let recipe = newRecipes[indexPath.row]
-        let addResult = databaseController?.addRecipe(recipeData: recipe)
-        print(addResult ?? "no recipe added")
-        navigationController?.popViewController(animated: true)
+        let recipeData = newRecipes[indexPath.row]
+
+       
+
+       // Optionally show a small activity indicator / disable UI while saving
+        databaseController?.addRecipe(recipeData: recipeData) { result in
+           DispatchQueue.main.async {
+               switch result {
+               case .success(_):
+                   self.navigationController?.popViewController(animated: true)
+
+               case .failure(let error):
+                   let ns = error as NSError
+                   if ns.code == 409 {
+                       // Duplicate case
+                       self.displayMessage(title: "Duplicate Recipe", message: "This recipe is already existed in your collection.")
+        
+                  } else {
+                       // Other error
+                      self.displayMessage(title: "Unexpected Error", message: "Internal error when adding recipe")
+                       
+                   }
+               }
+           }
+       }
     }
 
     // MARK: - API request call (supports letter-batch and name search)

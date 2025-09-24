@@ -36,7 +36,10 @@ protocol DatabaseProtocol: AnyObject {
     func addListener(listener: DatabaseListener)
     func removeListener(listener: DatabaseListener)
     
-    func addRecipe(recipeData: RecipeData) -> Recipe
+    // Add a recipe if it doesn't already exist (checked by recipeId field).
+        // Completion returns the stored Recipe on success or an Error (duplicate or other failure).
+        func addRecipe(recipeData: RecipeData, completion: @escaping (Result<Recipe, Error>) -> Void)
+    
     func deleteRecipe(recipe: Recipe)
     
 //    func signUp(email: String, password: String) async throws -> FirebaseAuth.User
