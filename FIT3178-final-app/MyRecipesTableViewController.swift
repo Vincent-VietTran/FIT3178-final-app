@@ -7,7 +7,17 @@
 
 import UIKit
 
-class MyRecipesTableViewController: UITableViewController {
+class MyRecipesTableViewController: UITableViewController, DatabaseListener {
+    
+    // properties
+    var listenerType: ListenerType = .recipes
+    // table cell resuable id
+    let CELL_RECIPE = "recipeCell"
+    let NUM_SECTIONS = 1
+    var allRecipes = [Recipe]()
+    
+    // Have reference to the database controller
+    weak var databaseController: DatabaseProtocol?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -17,29 +27,34 @@ class MyRecipesTableViewController: UITableViewController {
 
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
+        
+        // get a reference to the database from appDelegate
+        let appDelegate = (UIApplication.shared.delegate as? AppDelegate)
+        databaseController = appDelegate?.databaseController
     }
 
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         // #warning Incomplete implementation, return the number of sections
-        return 0
+        return NUM_SECTIONS
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return 0
+        return allRecipes.count
     }
 
-    /*
+    
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-
-        // Configure the cell...
+        let cell = tableView.dequeueReusableCell(withIdentifier: CELL_RECIPE, for: indexPath)
+        let recipe = allRecipes[indexPath.row]
+        cell.textLabel?.text = recipe.recipeName
+        cell.detailTextLabel?.text = recipe.category
 
         return cell
     }
-    */
+    
 
     /*
     // Override to support conditional editing of the table view.
@@ -86,4 +101,23 @@ class MyRecipesTableViewController: UITableViewController {
     }
     */
 
+    // MARK: - Database listener methods
+    
+    func onRecipeListChange(change: DatabaseChange, recipeList: [Recipe]) {
+        allRecipes = recipeList
+        tableView.reloadData()
+    }
+    
+    // Add this controller as listener to database controller when view appear
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        databaseController?.addListener(listener: self)
+    }
+    
+    // remove this controller as listener to database controller when view disappear
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        databaseController?.removeListener(listener: self)
+    }
+    
 }

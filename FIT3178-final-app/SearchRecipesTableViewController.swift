@@ -17,6 +17,9 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
 
     // Indicator for loading
     var indicator = UIActivityIndicatorView()
+    
+    // Have reference to the database controller
+    weak var databaseController: DatabaseProtocol?
 
     // --- Letter-batch pagination state (TheMealDB has no startIndex/maxResults) ---
     private let lettersForBatches: [Character] = Array("abcdefghijklmnopqrstuvwxyz")
@@ -47,9 +50,17 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
 
         // Start initial letter-batch load so user sees content even if they don't type
         indicator.startAnimating()
+        
+        // get a reference to the database from appDelegate
+        let appDelegate = (UIApplication.shared.delegate as? AppDelegate)
+        databaseController = appDelegate?.databaseController
+        
+        
         Task {
             await requestRecipesNamed("") // empty string triggers letter-batch loading
         }
+        
+        
     }
 
     // MARK: - Table view data source
@@ -70,6 +81,13 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
         cell.detailTextLabel?.text = recipe.category
 
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let recipe = newRecipes[indexPath.row]
+        let addResult = databaseController?.addRecipe(recipeData: recipe)
+        print(addResult ?? "no recipe added")
+        navigationController?.popViewController(animated: true)
     }
 
     // MARK: - API request call (supports letter-batch and name search)

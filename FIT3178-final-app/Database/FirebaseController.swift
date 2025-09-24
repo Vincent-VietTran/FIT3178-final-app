@@ -165,7 +165,10 @@ class FirebaseController: NSObject, DatabaseProtocol {
                     recipeList.remove(at: Int(change.oldIndex))
                 }
             } catch {
-                fatalError("Unable to decode recipe: \(error.localizedDescription)")
+                print("Failed to decode recipe document id=\(change.document.documentID): \(error)")
+                print("Raw document data for id=\(change.document.documentID): \(change.document.data())")
+                // skip this change
+                return
             }
             
             // once recipes been modified as requiredm call multicast invoke and update all listeners
