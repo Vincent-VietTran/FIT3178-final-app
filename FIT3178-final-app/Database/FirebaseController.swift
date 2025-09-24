@@ -73,6 +73,7 @@ class FirebaseController: NSObject, DatabaseProtocol {
         let recipe = Recipe()
         
         // set properties for the instance
+        recipe.recipeId = recipeData.recipeId
         recipe.recipeName = recipeData.recipeName
         recipe.category = recipeData.category
         recipe.country = recipeData.country

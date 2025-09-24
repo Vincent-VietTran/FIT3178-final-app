@@ -15,7 +15,7 @@ struct Ingredient: Codable {
 
 // RecipeData decodes a single recipe from TheMealDB API
 class RecipeData: NSObject, Decodable {
-    var id: String
+    var recipeId: String
     var recipeName: String
     var category: String?
     var country: String?
@@ -42,7 +42,7 @@ class RecipeData: NSObject, Decodable {
     required init(from decoder: Decoder) throws {
         // 1. Standard fields
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
+        recipeId = try container.decode(String.self, forKey: .id)
         recipeName = try container.decode(String.self, forKey: .recipeName)
         category = try? container.decode(String.self, forKey: .category)
         country = try? container.decode(String.self, forKey: .country)

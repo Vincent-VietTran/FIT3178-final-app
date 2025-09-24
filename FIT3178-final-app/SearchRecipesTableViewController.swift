@@ -201,8 +201,8 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
                 let oldCount = self.newRecipes.count
                 for recipe in gathered {
                     // Adjust `recipe.id` if your RecipeData uses a different identifier name.
-                    if !self.seenRecipeIds.contains(recipe.id) {
-                        self.seenRecipeIds.insert(recipe.id)
+                    if !self.seenRecipeIds.contains(recipe.recipeId) {
+                        self.seenRecipeIds.insert(recipe.recipeId)
                         self.newRecipes.append(recipe)
                     }
                 }
@@ -275,8 +275,8 @@ class SearchRecipesTableViewController: UITableViewController, UISearchBarDelega
 
                 if let recipes = recipeResponse.recipes {
                     for r in recipes {
-                        if !self.seenRecipeIds.contains(r.id) {
-                            self.seenRecipeIds.insert(r.id)
+                        if !self.seenRecipeIds.contains(r.recipeId) {
+                            self.seenRecipeIds.insert(r.recipeId)
                             self.newRecipes.append(r)
                         }
                     }

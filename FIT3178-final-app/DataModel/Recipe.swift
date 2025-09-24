@@ -12,6 +12,8 @@ class Recipe: NSObject, Codable {
     // properties
     // id/primary key of the recipe collection in firestore
     @DocumentID var id: String?
+    // meal id provided by theMealDB API response
+    var recipeId: String?
     var recipeName: String?
     var category: String?
     var country: String?
