@@ -21,7 +21,6 @@ class FirebaseController: NSObject, DatabaseProtocol {
 //    much like the NSFetchedResultsController
     
     // properties
-    let DEFAULT_RECIPE_LIST_NAME = "My"
     var listeners = MulticastDelegate<DatabaseListener>()
     var recipeList: [Recipe]
     
@@ -163,15 +162,6 @@ class FirebaseController: NSObject, DatabaseProtocol {
                 "createdAt": Timestamp(date: Date())
             ])
             
-            // create initial recipe list for user
-            let recipestData: [String: Any] = [
-                "name": "\(result.user.email ?? "\(DEFAULT_RECIPE_LIST_NAME)")'s Favorite Recipes",
-                "recipes": [],
-                "createdAt": FieldValue.serverTimestamp()
-            ]
-
-            let recipesRef = try await userDoc.collection("recipes").addDocument(data: recipestData)
-            print("Created recipe list with ID: \(recipesRef.documentID)")
         
             if !listenersInitialized {
                 self.setupRecipeListener()
