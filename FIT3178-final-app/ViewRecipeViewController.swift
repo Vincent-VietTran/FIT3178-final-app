@@ -3,7 +3,6 @@
 //  FIT3178-final-app
 //
 //  Created by Viet Tran on 25/9/2025.
-//  Updated by GitHub Copilot to display ingredients in a table view.
 //
 
 import UIKit
@@ -13,14 +12,17 @@ class ViewRecipeViewController: UIViewController, UITableViewDataSource, UITable
     var recipe: Recipe?
     
     @IBOutlet weak var imageField: UIImageView!
-    @IBOutlet weak var tagField: UILabel!
-    @IBOutlet weak var categoryField: UILabel!
+    @IBOutlet weak var tagField: PillUILabel!
+    @IBOutlet weak var categoryField: PillUILabel!
     @IBOutlet weak var sourceField: UILabel!
-    // Replace the UITextView in your storyboard with a UITableView and connect it to this outlet
     @IBOutlet weak var ingredientTable: UITableView!
     
-    // Local copy of ingredients to drive the table view
+    // List of ingredients for table view
     private var ingredients: [Ingredient] = []
+    // List of tags
+    private var tags: [String] = []
+    
+    let CELL_INGREDIENT = "ingredientCell"
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,23 +32,39 @@ class ViewRecipeViewController: UIViewController, UITableViewDataSource, UITable
         ingredientTable.delegate = self
         ingredientTable.tableFooterView = UIView() // hides empty separators
         
-        // If you didn't add a prototype cell in storyboard, the code below ensures a subtitle cell is created.
-        // If you DO use a prototype cell (recommended) set its identifier to "ingredientCell" and style to Subtitle.
+        // Make sure image content in imageField fits its container
+        imageField.contentMode = .scaleAspectFill
+        imageField.clipsToBounds = true
+
         
         // Populate recipe data if present
         guard let recipe = recipe else { return }
+        // navigation title
         navigationItem.title = recipe.recipeName ?? "Unknown Recipe"
-        tagField.text = recipe.tags ?? ""
-        categoryField.text = recipe.category ?? ""
-        if let src = recipe.sourceLink, !src.isEmpty {
-            sourceField.text = "Source: \(src)"
-        } else {
-            sourceField.text = "Source: No source found"
+        
+        // tags field
+        tagField.pillColor = .systemOrange
+        tagField.textPillColor = .white
+        if let rawTags = recipe.tags{
+            tagField.text = rawTags
+        } else{
+            tagField.isHidden = true
         }
+        
+        // category field
+        categoryField.pillColor = .systemCyan
+        categoryField.textPillColor = .white
+        if let category = recipe.category {
+            categoryField.text = category
+        } else {
+            categoryField.isHidden = true
+        }
+        
+        // sourrce field
+        sourceField.text = (recipe.sourceLink?.isEmpty == false) ? "Source: \(recipe.sourceLink!)" : "Source: No source found"
         
         // copy ingredients for table view; if empty we'll show a single "No ingredients" cell
         ingredients = recipe.ingredients
-        
         ingredientTable.reloadData()
         
         // Load recipe image
@@ -71,7 +89,7 @@ class ViewRecipeViewController: UIViewController, UITableViewDataSource, UITable
         
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        let cellIdentifier = "ingredientCell"
+        let cellIdentifier = CELL_INGREDIENT
         // Try to dequeue. If nil, create a default subtitle-style cell so detailTextLabel is available.
         let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) ?? UITableViewCell(style: .subtitle, reuseIdentifier: cellIdentifier)
 
