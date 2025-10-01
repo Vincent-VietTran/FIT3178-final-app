@@ -320,6 +320,7 @@
                     <connections>
                         <outlet property="categoryField" destination="mZe-b9-t1h" id="ShE-QB-9kq"/>
                         <outlet property="imageField" destination="YFe-qs-9WZ" id="bmq-Bp-6Y3"/>
+                        <outlet property="ingredientLabel" destination="L1d-Ru-07z" id="Dbs-yw-BB3"/>
                         <outlet property="ingredientTable" destination="seF-BB-L5T" id="Frh-Zb-ev8"/>
                         <outlet property="sourceField" destination="di4-G9-aOd" id="mEq-0R-j5H"/>
                         <outlet property="tagCollectionHeightConstraint" destination="uTR-d9-MyR" id="cwj-8x-Ql0"/>

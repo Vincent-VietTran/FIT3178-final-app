@@ -86,7 +86,7 @@ class TagCollectionViewCell: UICollectionViewCell {
         )
 
         // Add safety margin to avoid any fractional/rounding differences
-        let extraSafety: CGFloat = 8.0
+        let extraSafety: CGFloat = 30.0
         return CGSize(width: ceil(size.width) + extraSafety, height: targetHeight)
     }
 }

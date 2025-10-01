@@ -16,7 +16,7 @@ class ViewRecipeViewController: UIViewController,
     @IBOutlet weak var categoryField: PillUILabel!
     @IBOutlet weak var sourceField: UILabel!
     @IBOutlet weak var ingredientTable: UITableView!
-
+    @IBOutlet weak var ingredientLabel: UILabel!
     @IBOutlet weak var tagCollectionView: UICollectionView!
     // Add a height constraint to the tagCollectionView in Interface Builder and connect it here.
     @IBOutlet weak var tagCollectionHeightConstraint: NSLayoutConstraint!
@@ -60,9 +60,19 @@ class ViewRecipeViewController: UIViewController,
 
         // If prefer to set the fixed height in code instead of Interface Builder, set it here:
         // tagCollectionHeightConstraint.constant = 36
+        
+        // Defensive layout priorities: prefer the category label to keep its intrinsic size,
+        // allow the tag collection to compress if necessary.
+        categoryField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        categoryField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+
+        tagCollectionView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tagCollectionView.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         // Populate recipe data if present
         guard let recipe = recipe else { return }
+        
+        // navigation title
         navigationItem.title = recipe.recipeName ?? "Unknown Recipe"
 
         // Category field
@@ -71,6 +81,27 @@ class ViewRecipeViewController: UIViewController,
         if let category = recipe.category?.trimmingCharacters(in: .whitespacesAndNewlines), !category.isEmpty {
             categoryField.text = category
             categoryField.isHidden = false
+            
+            // OPTIONAL: compute and pin width to avoid truncation if layout still compresses it.
+            // Make sure category pill width is dynamic based on its content
+            // This will respect a max width to avoid overflowing the screen.
+            let font = categoryField.font ?? UIFont.systemFont(ofSize: 14, weight: .medium)
+            let padding: CGFloat = 12 * 2 + 8
+            let height = categoryField.bounds.height > 0 ? categoryField.bounds.height : 30
+            let measured = ceil((category as NSString).boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: height),
+                                                                     options: .usesLineFragmentOrigin,
+                                                                     attributes: [.font: font],
+                                                                     context: nil).width)
+            let width = measured + padding
+            let maxWidth = view.bounds.width - 40 // keep some safe margin from edges
+            let finalWidth = min(width, maxWidth)
+
+            // Add width constraint only if needed (prevents duplicates on repeated loads)
+            if categoryField.constraints.first(where: { $0.firstAttribute == .width }) == nil {
+                let widthConstraint = categoryField.widthAnchor.constraint(equalToConstant: finalWidth)
+                widthConstraint.priority = .required
+                widthConstraint.isActive = true
+            }
         } else {
             categoryField.text = nil
             categoryField.isHidden = true
@@ -81,6 +112,7 @@ class ViewRecipeViewController: UIViewController,
 
         // Ingredients
         ingredients = recipe.ingredients
+        ingredientLabel.text = "Ingredients (\(ingredients.count))"
         ingredientTable.reloadData()
 
         // Tags: parse into an array and reload collection view
@@ -160,33 +192,22 @@ class ViewRecipeViewController: UIViewController,
     }
 
     // MARK: - UICollectionViewDelegateFlowLayout
-    // Return item size with height matching the collection view height so only one row is used
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
-                        sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // get the vertical insets
-        var verticalInsets: CGFloat = 0
-        if let flow = collectionViewLayout as? UICollectionViewFlowLayout {
-            verticalInsets = flow.sectionInset.top + flow.sectionInset.bottom
+        // Return item size with height matching the collection view height so only one row is used
+        func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
+                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+            // get the vertical insets
+            var verticalInsets: CGFloat = 0
+            if let flow = collectionViewLayout as? UICollectionViewFlowLayout {
+                verticalInsets = flow.sectionInset.top + flow.sectionInset.bottom
+            }
+            // height is collection's height minus vertical insets
+            let targetHeight = max(1, collectionView.bounds.height - verticalInsets)
+
+            // Use the cell's own sizing helper which already matches pill padding/font and includes a small safety margin
+            let tag = tags[indexPath.item]
+            let size = TagCollectionViewCell.sizeForTagUsingSizingLabel(tag, targetHeight: targetHeight)
+            return size
         }
-        // height is collection's height minus vertical insets
-        let targetHeight = max(1, collectionView.bounds.height - verticalInsets)
-
-        // match the font used in TagCollectionViewCell / PillUILabel
-        let font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        // total horizontal padding used inside the pill label (left + right)
-        let horizontalPadding: CGFloat = 12 * 2 // match TagCollectionViewCell's pillLabel.horizontalPadding
-
-        // measure text width
-        let tag = tags[indexPath.item]
-        let bounding = (tag as NSString).boundingRect(
-            with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: targetHeight),
-            options: .usesLineFragmentOrigin,
-            attributes: [.font: font],
-            context: nil)
-        let width = ceil(bounding.width) + horizontalPadding
-
-        return CGSize(width: width, height: targetHeight)
-    }
     
     
 
