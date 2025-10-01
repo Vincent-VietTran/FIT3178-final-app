@@ -129,7 +129,7 @@ class LoginViewController: UIViewController, DatabaseListener {
     // Called when sign-in completed (explicit sign-in). Perform segue.
     func onAuthSuccess(user: FirebaseAuth.User) {
         Task {
-            performSegue(withIdentifier: "loginToMyRecipes", sender: self)
+            performSegue(withIdentifier: "myRecipesSegue", sender: self)
         }
     }
 
